@@ -1,1 +1,1 @@
-# API Generator# api-generator
+# API Generator
