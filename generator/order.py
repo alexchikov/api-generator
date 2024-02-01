@@ -21,8 +21,8 @@ def generate_order(id):
         address_dict = random.choice(addresses)
         address = f'{address_dict["street"]}, {address_dict["house"]}, {address_dict["city"]}'
     restaurant_id = random.randint(1, 20)
-    contact_number = "+7" + \
-        "".join([str(random.randint(0, 9)) for _ in range(9)])
+    contact_number = "+79" + \
+        "".join([str(random.randint(0, 9)) for _ in range(8)])
     items = generate_order_items()
     status = "Preparing"
     return {
@@ -55,7 +55,11 @@ def generate_order_items():
 
 
 if __name__ == "__main__":
-    latest_id = 1
+    ls_dir = os.listdir('../files/orders/')
+    if ls_dir:
+        latest_id = int(max(ls_dir, key=lambda x: int(x.split('_')[1])).split('_')[1]) + 1
+    else:
+        latest_id = 1
     while True:
         creation_time = datetime.strftime(datetime.now(), '%d-%m-%Y_%H:%M:%S')
         filename = f"order_{latest_id}_{creation_time}.json"
