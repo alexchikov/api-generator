@@ -6,8 +6,7 @@ import os
 import random
 from time import sleep
 
-from kafka import KafkaProducer
-from kafka.errors import KafkaError
+from confluent_kafka import KafkaException, Producer
 
 from generator.message import generate_api_event
 
@@ -24,11 +23,13 @@ INTERVAL_MIN_SEC = float(os.getenv("INTERVAL_MIN_SEC", "0.3"))
 INTERVAL_MAX_SEC = float(os.getenv("INTERVAL_MAX_SEC", "2.5"))
 
 
-def build_producer() -> KafkaProducer:
-    return KafkaProducer(
-        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        value_serializer=lambda value: json.dumps(value).encode("utf-8"),
-        retries=5,
+def build_producer() -> Producer:
+    return Producer(
+        {
+            "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
+            "acks": "all",
+            "retries": 5,
+        }
     )
 
 
@@ -39,7 +40,7 @@ def run() -> None:
         raise ValueError("INTERVAL_MIN_SEC cannot be greater than INTERVAL_MAX_SEC")
 
     while True:
-        producer: KafkaProducer | None = None
+        producer: Producer | None = None
         try:
             producer = build_producer()
             logging.info(
@@ -50,8 +51,8 @@ def run() -> None:
 
             while True:
                 event = generate_api_event().as_dict()
-                delivery = producer.send(KAFKA_TOPIC, value=event)
-                delivery.get(timeout=10)
+                producer.produce(KAFKA_TOPIC, value=json.dumps(event).encode("utf-8"))
+                producer.flush(timeout=10)
                 logging.info(
                     "Published event %s %s %s",
                     event["source_service"],
@@ -59,7 +60,7 @@ def run() -> None:
                     event["endpoint"],
                 )
                 sleep(random.uniform(INTERVAL_MIN_SEC, INTERVAL_MAX_SEC))
-        except KafkaError:
+        except KafkaException:
             logging.exception("Kafka error. Retrying producer startup in 3 seconds...")
             sleep(3)
         except Exception:
@@ -67,7 +68,7 @@ def run() -> None:
             sleep(3)
         finally:
             if producer is not None:
-                producer.close()
+                producer.flush(timeout=5)
 
 
 if __name__ == "__main__":
