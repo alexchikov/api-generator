@@ -50,6 +50,14 @@ docker compose up -d --build
 - API health-check: `http://localhost:8000/health`
 - События в Kafka: `docker compose logs -f generator`
 
+## Troubleshooting
+
+Если при `docker compose up --build` получаете ошибку:
+`all predefined address pools have been fully subnetted`,
+в проекте уже зафиксирована отдельная сеть `api-generator-net` с подсетью `10.77.0.0/24`.
+Если именно она пересекается с вашей инфраструктурой, поменяйте `subnet` в `docker-compose.yml`
+на свободную (например, `10.78.0.0/24`) и запустите снова.
+
 Пример события:
 
 ```json
@@ -72,4 +80,3 @@ docker compose up -d --build
 - `INTERVAL_MIN_SEC` (default: `0.3`)
 - `INTERVAL_MAX_SEC` (default: `2.5`)
 - `LOG_LEVEL` (default: `INFO`)
-
